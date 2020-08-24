@@ -47,10 +47,10 @@ embml.sklearnModel(inputModel, outputFile, opts)
 embml.wekaModel(inputModel, outputFile, opts)
 		
 # opts can include:
-#			-rules: to generate a decision tree classifier code using if-then-else format.
-#			-fxp <n> <m>: to generate a classifier code that uses fixed-point format to perform real number operations. In this case, <n> is the number of integer bits and <m> is the number of fractional bits in the Qn.m format. Note that n + m + 1 must be equal to 32, 16, or 8, since that one bit is used to represent signed numbers.
-#			-approx: to generate an MLP classifier code that employs an approximation to substitute the sigmoid as an activation function in the neurons.
-#			-pwl <x>: to generate an MLP classifier code that employs a piecewise approximation to substitute the sigmoid as an activation function in the neurons. In this case, <x> must be equal to 2 (to use an 2-point PWL approximation) or 4 (to use an 4-point PWL approximation).
+#	-rules: to generate a decision tree classifier code using if-then-else format.
+#	-fxp <n> <m>: to generate a classifier code that uses fixed-point format to perform real number operations. In this case, <n> is the number of integer bits and <m> is the number of fractional bits in the Qn.m format. Note that n + m + 1 must be equal to 32, 16, or 8, since that one bit is used to represent signed numbers.
+#	-approx: to generate an MLP classifier code that employs an approximation to substitute the sigmoid as an activation function in the neurons.
+#	-pwl <x>: to generate an MLP classifier code that employs a piecewise approximation to substitute the sigmoid as an activation function in the neurons. In this case, <x> must be equal to 2 (to use an 2-point PWL approximation) or 4 (to use an 4-point PWL approximation).
 
 # Examples of generating decision tree classifier codes using if-then-else format.
 embml.wekaModel(inputDecisionTreeModel, outputFile, opts='-rules')
