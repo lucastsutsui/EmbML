@@ -22,7 +22,7 @@ EmbML accepts a trained model through the file that contains its serialized obje
 	* _DecisionTreeClassifier_ for decision tree models.
 
 # Installation
-You can install `embml` from [PyPi]<https://pypi.org/project/embml/>:
+You can install `embml` from [PyPi](https://pypi.org/project/embml/):
 ```python
 	pip install embml
 ```
