@@ -7,7 +7,9 @@ This tool takes as input a classification model that was trained in a desktop or
 
 ## Input Models
 
-EmbML accepts a trained model through the file that contains its serialized object. For instance, a classification model, built with WEKA, shall be serialized into a file using the _ObjectOutputStream_ and _FileOutputStream_ classes (available in Java). As for the scikit-learn models, they shall be saved using the _dump_ function, from _pickle_ module.
+EmbML accepts a trained model through the file that contains its serialized object. For instance, a classification model, built with WEKA, shall be serialized into a file using the _ObjectOutputStream_ and _FileOutputStream_ classes (available in Java). [Example of saving a WEKA model using its GUI.](https://machinelearningmastery.com/save-machine-learning-model-make-predictions-weka/).
+
+As for the scikit-learn models, they shall be serialized using the _dump_ function, from _pickle_ module. An example is provided in <https://scikit-learn.org/stable/modules/model_persistence.html>.
 
 ## Supported Classification Models
 
@@ -33,7 +35,7 @@ You can install `embml` from [PyPi](https://pypi.org/project/embml/):
 pip install embml
 ```
 
-This tool is supported on Python 2.7 and Python 3.5 version, and depends on the `javaobj` library.
+This tool is supported on Python 2.7 and Python 3.5 versions, and depends on the `javaobj` library.
 
 ## How To Use
 
