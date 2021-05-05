@@ -176,19 +176,20 @@ def write_output(classifier, opts):
     
     # Classify function
     funcs += utils.write_func_init("int", "classify") + \
-    utils.write_dec(decType, "*input", tabs=1) + \
-    utils.write_dec(decType, "*output", initValue="values", tabs=1) + \
+    utils.write_dec(decType, "*input", initValue="buffer1", tabs=1) + \
+    utils.write_dec(decType, "*output", initValue="buffer2", tabs=1) + \
     utils.write_for("i = 0", "i < INPUT_SIZE", "i++", tabs=1) + \
-    utils.write_attribution("output[i]", "instance[i]", tabs=2) + \
+    utils.write_attribution("input[i]", "instance[i]", tabs=2) + \
     utils.write_end(tabs=1) + \
     utils.write_for("i = 0", "i < N_LAYERS - 1", "i++", tabs=1) + \
-    utils.write_attribution("input", "output", tabs=2) + \
-    utils.write_attribution("output", "output + sizes[i]", tabs=2) + \
     utils.write_call("forward_pass(input, output, coefs[i], intercepts[i], sizes[i], sizes[i + 1])", tabs=2) + \
     utils.write_if("(i + 1) != (N_LAYERS - 1)", tabs=2) + \
     utils.write_for("j = 0", "j < sizes[i + 1]", "j++", tabs=3) + \
     utils.write_attribution("output[j]", "activation_hidden(output[j])", tabs=4) + \
     utils.write_end(tabs=3) + \
+    utils.write_dec(decType, "*tmp", initValue="input", tabs=3) + \
+    utils.write_attribution("input", "output", tabs=3) + \
+    utils.write_attribution("output", "tmp", tabs=3) + \
     utils.write_end(tabs=2) + \
     utils.write_else(tabs=2) + \
     utils.write_dec(decType, "max_output", initValue="output[0]", tabs=3) + \
@@ -220,7 +221,8 @@ def write_output(classifier, opts):
         
     # Declaration of global variables
     decls += utils.write_dec(decType, "instance[INPUT_SIZE + 1]") + '\n' + \
-    utils.write_dec(decType, "values[N_NEURONS]") + \
+    utils.write_dec(decType, "buffer1[" + str(max(classifier.sizes[::2])) + "]") + \
+    utils.write_dec(decType, "buffer2[" + str(max(classifier.sizes[1::2])) + "]") + \
     utils.write_dec("const " + utils.chooseDataType(classifier.sizes), \
                     "sizes[N_LAYERS]", \
                     initValue=utils.toStr(classifier.sizes)) + '\n' + \
