@@ -70,7 +70,7 @@ def activation_function(activation, opts):
                                  ("%.10f" % opts['pwlPoints'][0])), tabs=1) + \
             utils.write_ret((utils.toFxp(0.0, opts) \
                              if opts['useFxp'] else \
-                             "0.0"), tabs=2) + \
+                             "0.0f"), tabs=2) + \
             utils.write_end(tabs=1)
 
             # Internal points
@@ -93,7 +93,7 @@ def activation_function(activation, opts):
             pwlCode += utils.write_else(tabs=1) + \
             utils.write_ret((utils.toFxp(1.0, opts) \
                              if opts['useFxp'] else \
-                             "1.0"), tabs=2) + \
+                             "1.0f"), tabs=2) + \
             utils.write_end(tabs=1)
             
             return pwlCode
@@ -106,18 +106,18 @@ def activation_function(activation, opts):
                          ", fxp_div(x, fxp_sum(" + \
                          utils.toFxp(1.0, opts) + ", my_abs(x)))))") \
                         if opts['useFxp'] else \
-                        "0.5 * (x / (1.0 + my_abs(x))) + 0.5")
+                        "0.5f * (x / (1.0f + my_abs(x))) + 0.5f")
         else:
             # Using original sigmoid function
             funcCode = (("fxp_div(" + utils.toFxp(1.0, opts) +\
                          ", fxp_sum(" + utils.toFxp(1.0, opts) +\
                          ", fxp_exp(-x)))")\
                         if opts['useFxp'] else \
-                        "1.0 / (1.0 + expf(-x))")
+                        "1.0f / (1.0f + expf(-x))")
     elif activation == 'relu':
         funcCode = (("max(" + utils.toFxp(0, opts) + ", x)")\
                     if opts['useFxp'] else \
-                    "max(0.0, x)")
+                    "max(0.0f, x)")
     else:
         print ("Activation function " + activation + " not supported!")
         exit(1)
@@ -277,7 +277,6 @@ def write_output(classifier, opts):
     utils.write_define("my_abs(x)", "(((x) > (0.0)) ? (x) : -(x))") 
         
     # Include of libraries
-    incls += utils.write_include("<Arduino.h>")
     if opts['useFxp']:
         incls += utils.write_define("TOTAL_BITS", str(opts['totalBits'])) + \
         utils.write_define("FIXED_FBITS", str(opts['fracBits'])) + \

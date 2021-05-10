@@ -220,7 +220,6 @@ def write_output(classifier, opts):
     utils.write_define("CLASS_INDEX", str(classifier.m_classIndex))
         
     # Include of libraries
-    incls += utils.write_include("<Arduino.h>")
     if opts['useFxp']:
         incls += utils.write_define("TOTAL_BITS", str(opts['totalBits'])) + \
         utils.write_define("FIXED_FBITS", str(opts['fracBits'])) + \

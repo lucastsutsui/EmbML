@@ -9,91 +9,64 @@ class weka_MultilayerPerceptron:
 
     def __init__(self):
         self.ids = dict()
-        self.idsOutput = dict()
-        self.idsInput = dict()
-        self.sigIds = dict()
 
-    def setIds(self, node, offset):
-        if not 'JavaObject' in str(type(node)) or\
-           'NeuralEnd' in str(node) or\
-           vars(node)['m_id'] in self.ids:
-            return
+    def bfsModel(self, m_inputs):
 
-        for i in vars(node)['m_inputList']:
-            if 'JavaObject' in str(type(i)):
-                self.setIds(i, offset)
-            
-        self.ids[vars(node)['m_id']] = len(self.ids) + offset
-    
-        if 'SigmoidUnit' in str(vars(node)['m_methods']):
-            self.sigIds[self.ids[vars(node)['m_id']]] = True
+        queue = [(node, 0) for node in m_inputs]
 
-    # build the graph for the neural network
-    def buildGraph(self, node, visited):
-        if not 'JavaObject' in str(type(node)) or\
-           'NeuralEnd' in str(node):
-            return 
-
-        m_inputList = vars(node)['m_inputList']
-        m_id = self.ids[vars(node)['m_id']]
-        m_weights = vars(node)['m_weights']
-
-        if visited[m_id]:
-            return
-        visited[m_id] = True
-        self.weights[m_id].append((-1, m_weights[0])) # -1 means bias
-
-        for i in range(len(m_inputList)):
-            if not 'JavaObject' in str(type(m_inputList[i])):
+        while len(queue) > 0:
+            node, depth = queue[0]
+            queue.pop(0)
+        
+            if not 'JavaObject' in str(type(node)) or\
+               vars(node)['m_id'] in self.ids:
                 continue
 
-            if 'NeuralEnd' in str(m_inputList[i]):
-                idNext = self.idsInput[vars(m_inputList[i])['m_id']]
-            else:
-                idNext = self.ids[vars(m_inputList[i])['m_id']]
-            
-            self.buildGraph(m_inputList[i], visited)
-            self.weights[m_id].append((idNext, m_weights[i + 1]))
+            if len(self.layers) <= depth:
+                self.layers.append([])
+                
+                if depth > 0:
+                    self.weights.append([])
+                    self.biases.append([])
+
+            currentIndex = len(self.ids)
+            self.layers[depth].append(currentIndex)
+            self.ids[vars(node)['m_id']] = currentIndex
+
+            if depth > 0:
+                m_inputList = vars(node)['m_inputList']
+                m_weights = vars(node)['m_weights']
+                newWeights = [0 for _i in range(len(self.layers[depth - 1]))]
+
+                self.biases[depth - 1] += [m_weights[0]]
+
+                for i in range(len(m_inputList)):
+                    if not 'JavaObject' in str(type(m_inputList[i])):
+                        continue
+                    m_id = vars(m_inputList[i])['m_id']
+                    idPrev =  self.ids[m_id] - min(self.layers[depth - 1])
+                    newWeights[idPrev] = m_weights[i + 1]
+
+                self.weights[depth - 1] += newWeights
+
+            for i in vars(node)['m_outputList']:
+                if 'JavaObject' in str(type(i)) and\
+                   not 'NeuralEnd' in str(i):
+                    queue.append((i, depth + 1))
 
     def process(self, model, opts):
 
         self.classIndex = vars(vars(model)['m_instances'])['m_ClassIndex']
         m_outputs = vars(model)['m_outputs']
         m_inputs = vars(model)['m_inputs']
-
-        # First, set ids for neurons in input layer
-        for node in m_inputs:
-            if not vars(node)['m_id'] in self.idsInput:
-                self.idsInput[vars(node)['m_id']] = len(self.idsInput)
-
-        # Second, set ids for neurons in hidden layers
-        for node in m_outputs:
-            for c in vars(node)['m_inputList']:
-                self.setIds(c, len(self.idsInput))
-      
-        # Last, set ids for neurons in output layer
-        for node in m_outputs:
-            if not vars(node)['m_id'] in self.idsOutput:
-                self.idsOutput[vars(node)['m_id']] = len(self.idsOutput) + \
-                                                      len(self.ids) + \
-                                                      len(self.idsInput)
-        self.weights = [[] for _i in range(len(self.ids) + \
-                                          len(self.idsOutput) + \
-                                          len(self.idsInput))]
-        visited = [False for _i in range(len(self.weights))]
-
-        # Recover weights for each neuron
-        for node in m_outputs:
-            m_id = self.idsOutput[vars(node)['m_id']]
-            self.weights[m_id].append((-1, 0)) # bias
-    
-            for c in vars(node)['m_inputList']:
-                if not 'JavaObject' in str(type(c)):
-                    continue
         
-                self.buildGraph(c, visited)
-                idNext = self.ids[vars(c)['m_id']]
-                self.weights[m_id].append((idNext, 1))
+        self.layers = []
+        self.weights = []
+        self.biases = []
+
+        self.bfsModel(m_inputs)
+        
+        self.sizes = [len(_i) for _i in self.layers]
 
         self.m_attributeBases = vars(model)['m_attributeBases']
         self.m_attributeRanges = vars(model)['m_attributeRanges']
@@ -101,49 +74,18 @@ class weka_MultilayerPerceptron:
         self.m_attributeBases.pop(self.classIndex)
         self.m_attributeRanges.pop(self.classIndex)
 
-        # Save indices for sigmoid nodes
-        self.sigmoids = []
-        for i in range(len(self.weights)):
-            if i in self.sigIds:
-                self.sigmoids.append(True)
-            else:
-                self.sigmoids.append(False)
-
         # Save classes and output values
-        self.first_output = min(self.idsOutput.values())
-        self.classes = [0 for _i in range(len(self.idsOutput))]
-        for i in self.idsOutput:
-            self.classes[self.idsOutput[i] - self.first_output] = i
+        self.classes = [0 for _i in range(len(self.layers[-1]))]
+        for node in m_outputs:
+            connection = vars(node)['m_inputList'][0]
+            idConnection = vars(connection)['m_id']
+            self.classes[self.ids[idConnection] - min(self.layers[-1])] = vars(node)['m_id']
 
         # Save attributes and their order
-        self.attributes = ['' for _i in range(len(self.idsInput))]
-        for i in self.idsInput:
-            self.attributes[self.idsInput[i]] = i
-
-        # Initialize m_connections and m_weights arrays
-        self.m_connections = []
-        self.m_weights = []
-        self.m_indicesMap = [0]
-        
-        for i in range(len(self.weights)):
-            if len(self.weights[i]) == 0:
-                # case in which neurons are connected to nothing (input neurons)
-                self.m_indicesMap.append(self.m_indicesMap[-1])
-                continue
-
-            wei = []
-            con = []
-            for j,k in self.weights[i]:
-                if j == -1:
-                    # bias is the first number in array wei
-                    wei.insert(0, k)
-                    continue
-                wei.append(k)
-                con.append(j)
-            
-            self.m_indicesMap.append(len(con) + self.m_indicesMap[-1])
-            self.m_connections += con
-            self.m_weights += wei
+        self.attributes = ['' for _i in range(len(self.layers[0]))]
+        for node in m_inputs:
+            m_id = vars(node)['m_id']
+            self.attributes[self.ids[m_id]] = m_id
 
         if opts['useFxp']:
             self.m_attributeBases = [utils.toFxp(self.m_attributeBases[_i], opts) \
@@ -166,11 +108,11 @@ def sigFunction(opts):
         pwlCode = utils.write_if("value < " + \
                     (opts['pwlPoints'][0] \
                      if opts['useFxp'] else \
-                     ("%.10f" % opts['pwlPoints'][0])), tabs=3) + \
+                     ("%.10f" % opts['pwlPoints'][0])), tabs=1) + \
         utils.write_attribution("value", (utils.toFxp(0.0, opts) \
                                           if opts['useFxp'] else \
-                                          "0.0"), tabs=4) + \
-        utils.write_end(tabs=3)
+                                          "0.0"), tabs=2) + \
+        utils.write_end(tabs=1)
 
         # Internal points
         for i in range(0, len(opts['pwlPoints']) - 1):
@@ -178,7 +120,7 @@ def sigFunction(opts):
                                           (opts['pwlPoints'][i + 1] \
                                            if opts['useFxp'] else \
                                            ("%.10f" % opts['pwlPoints'][i + 1])), \
-                                          tabs=3) + \
+                                          tabs=1) + \
             utils.write_attribution("value", \
                     ("fxp_sum(fxp_mul(value, " + \
                      opts['pwlCoefs'][i][0] + "), " + \
@@ -186,15 +128,15 @@ def sigFunction(opts):
                     if opts['useFxp'] else \
                     (("%.10f" % opts['pwlCoefs'][i][1]) + \
                      " + (" + ("%.10f" % opts['pwlCoefs'][i][0]) + \
-                     " * value)"), tabs=4) + \
-            utils.write_end(tabs=3)
+                     " * value)"), tabs=2) + \
+            utils.write_end(tabs=1)
 
         # Last point
-        pwlCode += utils.write_else(tabs=3) + \
+        pwlCode += utils.write_else(tabs=1) + \
         utils.write_attribution("value", (utils.toFxp(1.0, opts) \
                                           if opts['useFxp'] else \
-                                          "1.0"), tabs=4) + \
-        utils.write_end(tabs=3)
+                                          "1.0"), tabs=2) + \
+        utils.write_end(tabs=1)
 
         return pwlCode
     
@@ -215,62 +157,69 @@ def sigFunction(opts):
 
     return utils.write_if("value < " + (utils.toFxp(-45.0, opts) \
                                  if opts['useFxp'] else \
-                                 "-45.0"), tabs=3) + \
+                                        "-45.0"), tabs=1) + \
     utils.write_attribution("value", (utils.toFxp(0.0, opts) \
                                       if opts['useFxp'] else \
-                                      "0.0"), tabs=4) + \
-    utils.write_end(tabs=3) + \
+                                      "0.0"), tabs=2) + \
+    utils.write_end(tabs=1) + \
     utils.write_elseif("value > " + (utils.toFxp(45.0, opts) \
                                      if opts['useFxp'] else \
-                                     "45.0"), tabs=3) + \
+                                     "45.0"), tabs=1) + \
     utils.write_attribution("value", (utils.toFxp(1.0, opts) \
                                       if opts['useFxp'] else \
-                                      "1.0"), tabs=4) + \
-    utils.write_end(tabs=3) + \
-    utils.write_else(tabs=3) + \
-    utils.write_attribution("value", sigCode, tabs=4) + \
-    utils.write_end(tabs=3)
+                                      "1.0"), tabs=2) + \
+    utils.write_end(tabs=1) + \
+    utils.write_else(tabs=1) + \
+    utils.write_attribution("value", sigCode, tabs=2) + \
+    utils.write_end(tabs=1) + \
+    utils.write_ret("value", tabs=1)
 
 def write_output(classifier, opts):
     funcs = '\n'
     decls = '\n'
     defs = '\n'
     incls = '\n'
+    inits = "\nvoid initConnections(){\n"
 
     decType = ("FixedNum" if opts['useFxp'] else "float")
 
-    # calculateOutput function
-    funcs += "/* Function calculateOutput description:\n\
- * Returns the output value from a neuron\n\
- */\n" + \
-    utils.write_func_init("inline void", "calculateOutput") + \
-    utils.write_for("i = 0", "i < INPUT_SIZE", "i++", tabs=1) + \
-    utils.write_attribution("m_value[i]", "instance[i]", tabs=2) + \
-    utils.write_end(tabs=1) + \
-    utils.write_for("i = INPUT_SIZE", "i < NUMBER_OF_NEURONS", "i++", tabs=1) + \
-    utils.write_dec(decType, "value", \
-                    initValue="m_weights[m_indicesMap[i] + (i - INPUT_SIZE)]", \
-                    tabs=2) + \
-    utils.write_for("j = 0", \
-                    "j < (m_indicesMap[i + 1] - m_indicesMap[i])", "j++", \
-                    tabs=2) + \
-    utils.write_attribution("value", \
-                            ("fxp_sum(value, fxp_mul(m_weights[m_indicesMap[i] + (i - INPUT_SIZE) + j + 1], m_value[m_connections[m_indicesMap[i]] + j]))" \
-                             if opts['useFxp'] else \
-                             "m_weights[m_indicesMap[i] + (i - INPUT_SIZE) + j + 1] * m_value[m_connections[m_indicesMap[i]] + j]"), \
-                            op=('' if opts['useFxp'] else '+'), tabs=3) + \
-    utils.write_end(tabs=2) + \
-    utils.write_if("sigmoids[i]", tabs=2) + \
+    # activation_hidden function
+    funcs += utils.write_func_init(decType, "activation_function", \
+                                   args=decType + " value") + \
     sigFunction(opts) + \
+    utils.write_end(tabs=0)
+
+    # calculateOutput function
+    funcs += utils.write_func_init("inline void", "forward_pass", \
+                                   args="const " + decType + " *input, " + \
+                                   decType + " *output, " + \
+                                   "const " + decType + " *coef, " + \
+                                   "const " + decType + " *intercept, " + \
+                                   "const int inputSize, const int outputSize") + \
+    utils.write_dec("int", "i", initValue="0", tabs=1) + \
+    utils.write_for("j = 0", "j < outputSize", "j++", tabs=1) + \
+    utils.write_dec(decType, "acc", initValue=(utils.toFxp(0.0, opts) \
+                                               if opts['useFxp'] else \
+                                               "0.0"), tabs=2) + \
+    utils.write_for("k = 0", "k < inputSize", "k++", tabs=2) + \
+    utils.write_attribution("acc", \
+                            "fxp_sum(acc, fxp_mul(coef[i++], input[k]))" \
+                            if opts['useFxp'] else \
+                            "(coef[i++] * input[k])", \
+                            op=('' if opts['useFxp'] else '+'), \
+                            tabs=3) + \
     utils.write_end(tabs=2) + \
-    utils.write_attribution("m_value[i]", "value", tabs=2) + \
+    utils.write_attribution("output[j]", \
+                            "fxp_sum(acc, intercept[j])" \
+                            if opts['useFxp'] else \
+                            "acc + intercept[j]", \
+                            tabs=2) + \
     utils.write_end(tabs=1) + \
     utils.write_end(tabs=0) 
     
     # Classify function
     funcs += utils.write_output_classes(classifier.classes) + '\n' + \
     utils.write_func_init("int", "classify") + \
-    utils.write_dec(decType, "theArray[OUTPUT_SIZE]", tabs=1) + \
     utils.write_for("i = 0", "i < INPUT_SIZE", "i++", tabs=1) + \
     utils.write_if("m_attributeRanges[i] != " + ("0"\
                                                  if opts['useFxp'] else \
@@ -289,54 +238,89 @@ def write_output(classifier, opts):
                             tabs=3) + \
     utils.write_end(tabs=2) + \
     utils.write_end(tabs=1) + \
-    utils.write_call("calculateOutput()", tabs=1) + \
-    utils.write_for("i = 0", "i < OUTPUT_SIZE", "i++", tabs=1) + \
-    utils.write_attribution("theArray[i]", \
-                            "m_value[FIRST_OUTPUT + i]", \
-                            tabs=2) + \
+    utils.write_dec(decType, "*input", initValue="buffer1", tabs=1) + \
+    utils.write_dec(decType, "*output", initValue="buffer2", tabs=1) + \
+    utils.write_for("i = 0", "i < INPUT_SIZE", "i++", tabs=1) + \
+    utils.write_attribution("input[i]", "instance[i]", tabs=2) + \
     utils.write_end(tabs=1) + \
-    utils.write_dec("int", "indexMax", initValue="0", tabs=1) + \
-    utils.write_for("i = 1", "i < OUTPUT_SIZE", "i++", tabs=1) + \
-    utils.write_if("theArray[i] > theArray[indexMax]", tabs=2) + \
-    utils.write_attribution("indexMax", "i", tabs=3) + \
+    utils.write_for("i = 0", "i < N_LAYERS - 1", "i++", tabs=1) + \
+    utils.write_call("forward_pass(input, output, coefs[i], intercepts[i], sizes[i], sizes[i + 1])", tabs=2) + \
+    utils.write_for("j = 0", "j < sizes[i + 1]", "j++", tabs=2) + \
+    utils.write_attribution("output[j]", "activation_function(output[j])", tabs=3) + \
+    utils.write_end(tabs=2) + \
+    utils.write_if("(i + 1) != (N_LAYERS - 1)", tabs=2) + \
+    utils.write_dec(decType, "*tmp", initValue="input", tabs=3) + \
+    utils.write_attribution("input", "output", tabs=3) + \
+    utils.write_attribution("output", "tmp", tabs=3) + \
     utils.write_end(tabs=2) + \
     utils.write_end(tabs=1) + \
-    utils.write_ret("indexMax", tabs=1) + \
+    utils.write_dec("int", "indMax", "0", tabs=1) + \
+    utils.write_for("i = 0", \
+                    "i < sizes[N_LAYERS - 1]", "i++", tabs=1) + \
+    utils.write_if("output[i] > output[indMax]", tabs=2) + \
+    utils.write_attribution("indMax", "i", tabs=3) + \
+    utils.write_end(tabs=2) + \
+    utils.write_end(tabs=1) + \
+    utils.write_ret("indMax", tabs=1) + \
     utils.write_end(tabs=0)
 
     # Declaration of global variables
     decls += utils.write_attributes(classifier.attributes) + '\n' + \
     utils.write_dec(decType, "instance[INPUT_SIZE + 1]") + '\n' + \
+    utils.write_dec(decType, "buffer1[" + str(max(classifier.sizes[::2])) + "]") + \
+    utils.write_dec(decType, "buffer2[" + str(max(classifier.sizes[1::2])) + "]") + \
     utils.write_dec("const " + decType, \
                     "m_attributeBases[INPUT_SIZE]", \
                     initValue=utils.toStr(classifier.m_attributeBases)) + '\n' + \
     utils.write_dec("const " + decType, \
                     "m_attributeRanges[INPUT_SIZE]", \
                     initValue=utils.toStr(classifier.m_attributeRanges)) + '\n' + \
+    utils.write_dec("const " + utils.chooseDataType(classifier.sizes), \
+                    "sizes[N_LAYERS]", \
+                    initValue=utils.toStr(classifier.sizes)) + '\n' + \
     utils.write_dec("const " + decType, \
-                    "m_weights[" + str(len(classifier.m_weights)) + ']', \
-                    initValue=utils.toStr(classifier.m_weights)) + \
-    utils.write_dec("const " + utils.chooseDataType(classifier.m_connections), \
-                    "m_connections[" + str(len(classifier.m_connections)) + ']', \
-                    initValue=utils.toStr(classifier.m_connections)) + '\n' + \
-    utils.write_dec("const " + utils.chooseDataType(classifier.m_indicesMap), \
-                    "m_indicesMap[" + str(len(classifier.m_indicesMap)) + ']', \
-                    initValue=utils.toStr(classifier.m_indicesMap)) + '\n' + \
-    utils.write_dec("const bool", \
-                    "sigmoids[NUMBER_OF_NEURONS]", \
-                    initValue=utils.toStr(classifier.sigmoids).lower()) + '\n' + \
-    utils.write_dec(decType, "m_value[NUMBER_OF_NEURONS]")
+                    "*coefs[N_LAYERS - 1]") + '\n'
 
+    ### Initialize coef array
+    for i in range(len(classifier.weights)):
+        if len(classifier.weights[i]) == 0:
+            inits += utils.write_attribution("coefs[" + str(i) + "]", \
+                                             "NULL", tabs=1)
+            continue
+        decls += utils.write_dec("const " + decType, \
+                    "coefs_" + str(i) + "[" + \
+                    str(len(classifier.weights[i])) + "]", \
+                    initValue=utils.toStr(classifier.weights[i])) + '\n'
+        inits += utils.write_attribution("coefs[" + str(i) + "]", \
+                                         "coefs_" + str(i), \
+                                         tabs=1)
+
+    ### Initialize intercepts array
+    decls += utils.write_dec("const " + decType, \
+                    "*intercepts[N_LAYERS - 1]") + '\n'
+    for i in range(len(classifier.biases)):
+        if len(classifier.biases[i]) == 0:
+            inits += utils.write_attribution("intercepts[" + str(i) + "]", \
+                                             "NULL", tabs=1)
+            continue
+        decls += utils.write_dec("const " + decType, \
+                    "intercepts_" + str(i) + "[" + \
+                    str(len(classifier.biases[i])) + "]", \
+                    initValue=utils.toStr(classifier.biases[i])) + '\n'
+        inits += utils.write_attribution("intercepts[" + str(i) + "]", \
+                                         "intercepts_" + str(i), \
+                                         tabs=1)
+
+    inits += "}\n"
+    
     # Definition of constant values
     defs += utils.write_define("INPUT_SIZE", str(len(classifier.attributes))) + \
     utils.write_define("CLASS_INDEX", str(classifier.classIndex)) + \
-    utils.write_define("OUTPUT_SIZE", str(len(classifier.classes))) + \
-    utils.write_define("FIRST_OUTPUT", str(classifier.first_output)) + \
-    utils.write_define("NUMBER_OF_NEURONS", str(len(classifier.weights))) + \
+    utils.write_define("N_LAYERS", str(len(classifier.layers))) + \
+    utils.write_define("N_NEURONS", str(len(classifier.weights))) + \
     utils.write_define("my_abs(x)", "(((x) > (0.0)) ? (x) : -(x))") 
         
     # Include of libraries
-    incls += utils.write_include("<Arduino.h>")
     if opts['useFxp']:
         incls += utils.write_define("TOTAL_BITS", str(opts['totalBits'])) + \
         utils.write_define("FIXED_FBITS", str(opts['fracBits'])) + \
@@ -345,7 +329,7 @@ def write_output(classifier, opts):
     else:
         incls += utils.write_include("<math.h>")
 
-    return (incls + defs + decls + funcs)
+    return (incls + defs + decls + funcs + inits)
 
 def recover(model, opts):
     classifier = weka_MultilayerPerceptron()

@@ -124,7 +124,6 @@ def write_output_rules(classifier, opts):
     utils.write_define("INPUT_SIZE", str(classifier.inputSize))
         
     # Include of libraries
-    incls += utils.write_include("<Arduino.h>")
     if opts['useFxp']:
         incls += utils.write_define("TOTAL_BITS", str(opts['totalBits'])) + \
         utils.write_define("FIXED_FBITS", str(opts['fracBits'])) + \
