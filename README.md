@@ -1,9 +1,9 @@
 
 # EmbML
 
-EmbML is a tool written in Python to automatically convert off-board-trained models into C++ source code files that can be compiled and executed in low-power microcontrollers. The main goal of EmbML is to produce classifier source codes that will run specifically in unresourceful hardware systems, using bare metal programming.
+EmbML is a tool written in Python to automatically convert off-board-trained models into C++ or C (C++ is the default option) source code files that can be compiled and executed in low-power microcontrollers. The main goal of EmbML is to produce classifier source codes that will run specifically in resource-constrained hardware systems, using bare metal programming.
 
-This tool takes as input a classification model that was trained in a desktop or server computer using WEKA or scikit-learn libraries. EmbML is responsible for converting the input model into a carefully crafted C++ code with support for embedded hardware, such as the avoidance of unnecessary use of main memory and implementation of fixed-point operations for non-integer numbers. 
+This tool takes as input a classification model that was trained in a desktop or server computer using WEKA or scikit-learn libraries. EmbML is responsible for converting the input model into a carefully crafted code in C++ or C with support for embedded hardware, such as the avoidance of unnecessary use of SRAM memory and implementation of fixed-point operations for non-integer numbers. 
 
 ## Input Models
 
@@ -35,7 +35,7 @@ You can install `embml` from [PyPi](https://pypi.org/project/embml/):
 pip install embml
 ```
 
-This tool is supported on Python 2.7 and Python 3.5 versions, and depends on the `javaobj` library.
+This tool is supported on Python 2.7 and Python 3.5 versions, and depends on the `javaobj` library (<https://pypi.org/project/javaobj-py3/>).
 
 ## How To Use
 
@@ -57,6 +57,10 @@ embml.wekaModel(inputModel, outputFile, opts)
 # Examples of generating decision tree classifier codes using if-then-else format.
 embml.wekaModel(inputDecisionTreeModel, outputFile, opts='-rules')
 embml.sklearnModel(inputDecisionTreeModel, outputFile, opts='-rules')
+
+# Examples of generating classifier codes in C programming language.
+embml.wekaModel(inputModel, outputFile, opts='-c')
+embml.sklearnModel(inputModel, outputFile, opts='-c')
 
 # Examples of generating classifier codes using fixed-point formats.
 embml.wekaModel(inputModel, outputFile, opts='-fxp 21 10') # Q21.10

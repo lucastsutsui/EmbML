@@ -25,6 +25,8 @@ def processOptions(opt):
             exit(1)
 
     opts['rules'] = ('-rules' in opt.split())
+    
+    opts['C'] = ('-c' in opt.split())
 
     opts['sigApprox'] = ('-sigApprox' in opt.split())
     opts['pwl'] = ('-sigPwl' in opt.split())

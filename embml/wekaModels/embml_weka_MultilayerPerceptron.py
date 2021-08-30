@@ -196,12 +196,17 @@ def write_output(classifier, opts):
                                    "const " + decType + " *coef, " + \
                                    "const " + decType + " *intercept, " + \
                                    "const int inputSize, const int outputSize") + \
-    utils.write_dec("int", "i", initValue="0", tabs=1) + \
-    utils.write_for("j = 0", "j < outputSize", "j++", tabs=1) + \
+    utils.write_dec("int", "i", initValue="0", tabs=1)
+    
+    if opts['C']: 
+        funcs += utils.write_dec("int", "j", tabs=1) + \
+                utils.write_dec("int", "k", tabs=1)
+    
+    funcs += utils.write_for("j = 0", "j < outputSize", "j++", tabs=1, inC=opts['C']) + \
     utils.write_dec(decType, "acc", initValue=(utils.toFxp(0.0, opts) \
                                                if opts['useFxp'] else \
                                                "0.0"), tabs=2) + \
-    utils.write_for("k = 0", "k < inputSize", "k++", tabs=2) + \
+    utils.write_for("k = 0", "k < inputSize", "k++", tabs=2, inC=opts['C']) + \
     utils.write_attribution("acc", \
                             "fxp_sum(acc, fxp_mul(coef[i++], input[k]))" \
                             if opts['useFxp'] else \
@@ -219,8 +224,13 @@ def write_output(classifier, opts):
     
     # Classify function
     funcs += utils.write_output_classes(classifier.classes) + '\n' + \
-    utils.write_func_init("int", "classify") + \
-    utils.write_for("i = 0", "i < INPUT_SIZE", "i++", tabs=1) + \
+    utils.write_func_init("int", "classify")
+    
+    if opts['C']: 
+        funcs += utils.write_dec("int", "i", tabs=1) + \
+                utils.write_dec("int", "j", tabs=1)
+    
+    funcs += utils.write_for("i = 0", "i < INPUT_SIZE", "i++", tabs=1, inC=opts['C']) + \
     utils.write_if("m_attributeRanges[i] != " + ("0"\
                                                  if opts['useFxp'] else \
                                                  "0.0"), tabs=2) + \
@@ -240,12 +250,12 @@ def write_output(classifier, opts):
     utils.write_end(tabs=1) + \
     utils.write_dec(decType, "*input", initValue="buffer1", tabs=1) + \
     utils.write_dec(decType, "*output", initValue="buffer2", tabs=1) + \
-    utils.write_for("i = 0", "i < INPUT_SIZE", "i++", tabs=1) + \
+    utils.write_for("i = 0", "i < INPUT_SIZE", "i++", tabs=1, inC=opts['C']) + \
     utils.write_attribution("input[i]", "instance[i]", tabs=2) + \
     utils.write_end(tabs=1) + \
-    utils.write_for("i = 0", "i < N_LAYERS - 1", "i++", tabs=1) + \
+    utils.write_for("i = 0", "i < N_LAYERS - 1", "i++", tabs=1, inC=opts['C']) + \
     utils.write_call("forward_pass(input, output, coefs[i], intercepts[i], sizes[i], sizes[i + 1])", tabs=2) + \
-    utils.write_for("j = 0", "j < sizes[i + 1]", "j++", tabs=2) + \
+    utils.write_for("j = 0", "j < sizes[i + 1]", "j++", tabs=2, inC=opts['C']) + \
     utils.write_attribution("output[j]", "activation_function(output[j])", tabs=3) + \
     utils.write_end(tabs=2) + \
     utils.write_if("(i + 1) != (N_LAYERS - 1)", tabs=2) + \
@@ -256,7 +266,7 @@ def write_output(classifier, opts):
     utils.write_end(tabs=1) + \
     utils.write_dec("int", "indMax", "0", tabs=1) + \
     utils.write_for("i = 0", \
-                    "i < sizes[N_LAYERS - 1]", "i++", tabs=1) + \
+                    "i < sizes[N_LAYERS - 1]", "i++", tabs=1, inC=opts['C']) + \
     utils.write_if("output[i] > output[indMax]", tabs=2) + \
     utils.write_attribution("indMax", "i", tabs=3) + \
     utils.write_end(tabs=2) + \

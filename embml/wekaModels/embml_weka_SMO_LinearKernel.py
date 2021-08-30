@@ -100,8 +100,12 @@ def write_output(classifier, opts):
     utils.write_dec(decType, "result", \
                     initValue=(utils.toFxp(0.0, opts)\
                                if opts['useFxp'] else \
-                               "0.0"), tabs=1) + \
-    utils.write_for("p1 = 0", "p1 < INPUT_SIZE", "p1++", tabs=1) + \
+                               "0.0"), tabs=1)
+    
+    if opts['C']: 
+        funcs += utils.write_dec("int", "p1", tabs=1)
+    
+    funcs += utils.write_for("p1 = 0", "p1 < INPUT_SIZE", "p1++", tabs=1, inC=opts['C']) + \
     utils.write_if("p1 != CLASS_INDEX", tabs=2) + \
     utils.write_attribution("result", \
                             ("fxp_sum(result, fxp_mul(instance[p1], m_sparseWeights[i][(j * INPUT_SIZE) + p1]))"\
@@ -122,8 +126,13 @@ def write_output(classifier, opts):
     
     # Classify function
     funcs += utils.write_output_classes(classifier.classes) + '\n' + \
-    utils.write_func_init("int", "classify") + \
-    utils.write_for("i = 0", "i <= INPUT_SIZE", "i++", tabs=1) + \
+    utils.write_func_init("int", "classify")
+    
+    if opts['C']: 
+        funcs += utils.write_dec("int", "i", tabs=1) + \
+                utils.write_dec("int", "j", tabs=1)
+    
+    funcs += utils.write_for("i = 0", "i <= INPUT_SIZE", "i++", tabs=1, inC=opts['C']) + \
     utils.write_if("maxArray[i] == minArray[i] || minArray[i] == " + \
                    ("INF_POS" \
                     if opts['useFxp'] else \
@@ -144,8 +153,8 @@ def write_output(classifier, opts):
     utils.write_end(tabs=1) + \
     utils.write_dec("int", "result[NUM_CLASSES]", \
                     initValue="{0}", tabs=1) + \
-    utils.write_for("i = 1", "i < NUM_CLASSES", "i++", tabs=1) + \
-    utils.write_for("j = 0", "j < i", "j++", tabs=2) + \
+    utils.write_for("i = 1", "i < NUM_CLASSES", "i++", tabs=1, inC=opts['C']) + \
+    utils.write_for("j = 0", "j < i", "j++", tabs=2, inC=opts['C']) + \
     utils.write_dec(decType, "output", \
                     initValue="SVMOutput(i, j)", tabs=3) + \
     utils.write_if("output > 0", tabs=3) + \
@@ -158,7 +167,7 @@ def write_output(classifier, opts):
     utils.write_end(tabs=1) + \
     utils.write_dec("int", "indMax", \
                     initValue="0", tabs=1) + \
-    utils.write_for("i = 1", "i < NUM_CLASSES", "i++", tabs=1) + \
+    utils.write_for("i = 1", "i < NUM_CLASSES", "i++", tabs=1, inC=opts['C']) + \
     utils.write_if("result[i] > result[indMax]", tabs=2) + \
     utils.write_attribution("indMax", "i", tabs=3) + \
     utils.write_end(tabs=2) + \

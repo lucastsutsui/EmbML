@@ -16,9 +16,13 @@ def write_end(tabs=0):
 def write_while(condition, tabs=0):
     return ('\t' * tabs) + 'while (' + condition + '){\n'
 
-def write_for(var, condition, inc, tabs=0):
-    return ('\t' * tabs) + 'for (int ' + var + \
-        '; ' + condition + '; ' + inc + '){\n'
+def write_for(var, condition, inc, tabs=0, inC=False):
+    if inC:
+        return ('\t' * tabs) + 'for (' + var + \
+            '; ' + condition + '; ' + inc + '){\n'
+    else:
+        return ('\t' * tabs) + 'for (int ' + var + \
+            '; ' + condition + '; ' + inc + '){\n'
 
 def write_if(condition, tabs=0):
     return ('\t' * tabs) + 'if (' + condition + '){\n'

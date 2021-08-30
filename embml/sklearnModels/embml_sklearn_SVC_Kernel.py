@@ -64,8 +64,12 @@ class sklearn_SVC_Kernel:
 def kernelFunction(kernel, decType, opts):
     funcCode = utils.write_dec(decType, "sum", (utils.toFxp(0, opts)\
                                          if opts['useFxp'] else \
-                                         "0.0"), tabs=1) + \
-            utils.write_for("i = 0", "i < INPUT_SIZE", "i++", tabs=1)
+                                         "0.0"), tabs=1)
+    
+    if opts['C']: 
+        funcCode += utils.write_dec("int", "i", tabs=1)
+    
+    funcCode += utils.write_for("i = 0", "i < INPUT_SIZE", "i++", tabs=1, inC=opts['C'])
             
     if kernel == 'linear':
         return funcCode + \
@@ -135,8 +139,14 @@ def write_output(classifier, opts):
     
     # Classify function
     funcs += utils.write_func_init("int", "classify") + \
-    utils.write_dec(decType, "k_value[MODEL_L]", tabs=1) + \
-    utils.write_for("i = 0", "i < MODEL_L", "i++", tabs=1) + \
+    utils.write_dec(decType, "k_value[MODEL_L]", tabs=1)
+    
+    if opts['C']: 
+        funcs += utils.write_dec("int", "i", tabs=1) + \
+                utils.write_dec("int", "j", tabs=1) + \
+                utils.write_dec("int", "k", tabs=1)
+    
+    funcs += utils.write_for("i = 0", "i < MODEL_L", "i++", tabs=1, inC=opts['C']) + \
     utils.write_attribution("k_value[i]",
                             "k_function(support_vectors[i])",
                             tabs=2) + \
@@ -146,13 +156,13 @@ def write_output(classifier, opts):
                     "{0}", tabs=1) + \
     utils.write_dec(utils.chooseDataType(classifier.n_class),
                     "p", "0", tabs=1) + \
-    utils.write_for("i = 0", "i < NR_CLASS - 1", "i++", tabs=1) + \
-    utils.write_for("j = i + 1", "j < NR_CLASS", "j++", tabs=2) + \
+    utils.write_for("i = 0", "i < NR_CLASS - 1", "i++", tabs=1, inC=opts['C']) + \
+    utils.write_for("j = i + 1", "j < NR_CLASS", "j++", tabs=2, inC=opts['C']) + \
     utils.write_dec(decType, "sum", (utils.toFxp(0, opts)\
                                      if opts['useFxp'] else \
                                      "0.0"), tabs=3) + \
     utils.write_for("k = end[j - 1][i]", \
-                    "k < end[j - 1][i + 1]", "k++", tabs=3) + \
+                    "k < end[j - 1][i + 1]", "k++", tabs=3, inC=opts['C']) + \
     utils.write_attribution("sum",
         ("fxp_sum(sum, fxp_mul(dual_coef[j - 1][k], k_value[index_sv[j - 1][k]]))"\
          if opts['useFxp'] else\
@@ -161,7 +171,7 @@ def write_output(classifier, opts):
         tabs=4) + \
     utils.write_end(tabs=3) + \
     utils.write_for("k = end[i][j]", \
-                    "k < end[i][j + 1]", "k++", tabs=3) + \
+                    "k < end[i][j + 1]", "k++", tabs=3, inC=opts['C']) + \
     utils.write_attribution("sum",
         ("fxp_sum(sum, fxp_mul(dual_coef[i][k], k_value[index_sv[i][k]]))"\
          if opts['useFxp'] else\
@@ -184,7 +194,7 @@ def write_output(classifier, opts):
     utils.write_end(tabs=2) + \
     utils.write_end(tabs=1) + \
     utils.write_dec("int", "indMax", "0", tabs=1) + \
-    utils.write_for("i = 1", "i < NR_CLASS", "i++", tabs=1) + \
+    utils.write_for("i = 1", "i < NR_CLASS", "i++", tabs=1, inC=opts['C']) + \
     utils.write_if("vote[i] > vote[indMax]", tabs=2) + \
     utils.write_attribution("indMax", "i", tabs=3) + \
     utils.write_end(tabs=2) + \

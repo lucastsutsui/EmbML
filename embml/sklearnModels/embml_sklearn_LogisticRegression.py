@@ -26,10 +26,15 @@ def write_output(classifier, opts):
     # Classify function
     funcs += utils.write_func_init("int", "classify") + \
     utils.write_dec("int", "indMax", initValue="0", tabs=1) + \
-    utils.write_dec(decType, "scores[NUM_CLASSES]", tabs=1) + \
-    utils.write_for("i = 0", "i < NUM_CLASSES", "i++", tabs=1) + \
+    utils.write_dec(decType, "scores[NUM_CLASSES]", tabs=1)
+
+    if opts['C']: 
+        funcs += utils.write_dec("int", "i", tabs=1) + \
+                utils.write_dec("int", "j", tabs=1)
+    
+    funcs += utils.write_for("i = 0", "i < NUM_CLASSES", "i++", tabs=1, inC=opts['C']) + \
     utils.write_attribution("scores[i]", "intercept[i]", tabs=2) + \
-    utils.write_for("j = 0", "j < INPUT_SIZE", "j++", tabs=2) + \
+    utils.write_for("j = 0", "j < INPUT_SIZE", "j++", tabs=2, inC=opts['C']) + \
     utils.write_attribution("scores[i]", \
                             ("fxp_sum(scores[i], fxp_mul(coef[i][j], instance[j]))" \
                              if opts['useFxp'] else \

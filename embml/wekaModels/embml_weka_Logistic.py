@@ -72,12 +72,17 @@ def write_output(classifier, opts):
     funcs += utils.write_output_classes(classifier.classes) + '\n' + \
     utils.write_func_init("int", "classify") + \
     utils.write_dec(decType, "prob[NUM_CLASSES]", tabs=1) + \
-    utils.write_dec(decType, "newInstance[NUM_PREDICTORS + 1]", tabs=1) + \
-    utils.write_attribution("newInstance[0]", \
+    utils.write_dec(decType, "newInstance[NUM_PREDICTORS + 1]", tabs=1)
+    
+    if opts['C']: 
+        funcs += utils.write_dec("int", "i", tabs=1) + \
+                utils.write_dec("int", "j", tabs=1)
+    
+    funcs += utils.write_attribution("newInstance[0]", \
                             (utils.toFxp(1.0, opts) \
                              if opts['useFxp'] else \
                              "1.0"), tabs=1) + \
-    utils.write_for("i = 1", "i <= SELECTED_ATT_SIZE", "i++", tabs=1) + \
+    utils.write_for("i = 1", "i <= SELECTED_ATT_SIZE", "i++", tabs=1, inC=opts['C']) + \
     utils.write_if("m_SelectedAttributes[i] <= CLASS_INDEX", tabs=2) + \
     utils.write_attribution("newInstance[i]", \
                             "instance[m_SelectedAttributes[i - 1]]", \
@@ -93,8 +98,8 @@ def write_output(classifier, opts):
                     "v[NUM_CLASSES]", \
                     initValue="{0}", \
                     tabs=1) + \
-    utils.write_for("i = 0", "i < NUM_CLASSES - 1", "i++", tabs=1) + \
-    utils.write_for("j = 0", "j <= NUM_PREDICTORS", "j++", tabs=2) + \
+    utils.write_for("i = 0", "i < NUM_CLASSES - 1", "i++", tabs=1, inC=opts['C']) + \
+    utils.write_for("j = 0", "j <= NUM_PREDICTORS", "j++", tabs=2, inC=opts['C']) + \
     utils.write_attribution("v[i]", \
                             ("fxp_sum(v[i], fxp_mul(m_Par[(i * (NUM_PREDICTORS + 1)) + j], newInstance[j]))" \
                             if opts['useFxp'] else \
@@ -103,10 +108,10 @@ def write_output(classifier, opts):
     utils.write_end(tabs=2) + \
     utils.write_end(tabs=1) + \
     utils.write_attribution("v[NUM_CLASSES - 1]", "0", tabs=1) + \
-    utils.write_for("i = 0", "i < NUM_CLASSES", "i++", tabs=1) + \
+    utils.write_for("i = 0", "i < NUM_CLASSES", "i++", tabs=1, inC=opts['C']) + \
     utils.write_dec(decType, "acc", \
                     initValue=("0" if opts['useFxp'] else "0.0"), tabs=2) + \
-    utils.write_for("j = 0", "j < NUM_CLASSES - 1", "j++", tabs=2) + \
+    utils.write_for("j = 0", "j < NUM_CLASSES - 1", "j++", tabs=2, inC=opts['C']) + \
     utils.write_attribution("acc", \
                             ("fxp_sum(acc, fxp_exp(fxp_diff(v[j], v[i])))" \
                              if opts['useFxp'] else \
@@ -121,7 +126,7 @@ def write_output(classifier, opts):
                              "1.0 / (acc + expf(-v[i]))"), tabs=2) + \
     utils.write_end(tabs=1) + \
     utils.write_dec("int", "indexMax", initValue="0", tabs=1) + \
-    utils.write_for("i = 1", "i < NUM_CLASSES", "i++", tabs=1) + \
+    utils.write_for("i = 1", "i < NUM_CLASSES", "i++", tabs=1, inC=opts['C']) + \
     utils.write_if("prob[i] > prob[indexMax]", tabs=2) + \
     utils.write_attribution("indexMax", "i", tabs=3) + \
     utils.write_end(tabs=2) + \
