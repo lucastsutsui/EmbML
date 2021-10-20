@@ -5,7 +5,7 @@ with open("README.md", encoding='utf-8') as fh:
 
 setup(
     name="embml",
-    version="0.0.4",
+    version="0.0.5",
     author="Lucas Tsutsui da Silva",
     author_email="lucastsui@hotmail.com",
     description="A tool to support using classification models in low-power microcontroller-based hardware",
@@ -15,12 +15,14 @@ setup(
     packages=find_packages(),
     classifiers=[
         "Programming Language :: Python :: 2.7",
-        "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.7",
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
         "Operating System :: OS Independent",
     ],
     install_requires=[
-        'javaobj'
+        'javaobj-py3',
+        'numpy',
+        'scikit-learn'
     ],
     license="GPL3",
     keywords=[

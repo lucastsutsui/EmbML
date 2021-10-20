@@ -1,9 +1,9 @@
 
 # EmbML
 
-EmbML is a tool written in Python to automatically convert off-board-trained models into C++ or C (C++ is the default option) source code files that can be compiled and executed in low-power microcontrollers. The main goal of EmbML is to produce classifier source codes that will run specifically in resource-constrained hardware systems, using bare metal programming.
+EmbML is a tool written in Python to automatically convert off-board-trained models into C++ (default option) or C source code files that can be compiled and executed in low-power microcontrollers. The main goal of EmbML is to produce classifier source codes that will run specifically in resource-constrained hardware systems, using bare metal programming.
 
-This tool takes as input a classification model that was trained in a desktop or server computer using WEKA or scikit-learn libraries. EmbML is responsible for converting the input model into a carefully crafted code in C++ or C with support for embedded hardware, such as the avoidance of unnecessary use of SRAM memory and implementation of fixed-point operations for non-integer numbers. 
+This tool takes as input a classification model that was trained in a desktop or server computer using WEKA or scikit-learn libraries. EmbML is responsible for converting the input model into a carefully crafted code in C or C++ with support for embedded hardware, such as the avoidance of unnecessary use of SRAM memory and implementation of fixed-point operations for non-integer numbers. 
 
 ## Input Models
 
@@ -35,7 +35,7 @@ You can install `embml` from [PyPi](https://pypi.org/project/embml/):
 pip install embml
 ```
 
-This tool is supported on Python 2.7 and Python 3.5 versions, and depends on the `javaobj` library (<https://pypi.org/project/javaobj-py3/>).
+This tool is supported on Python 2.7 and Python 3.7 versions, and depends on the `javaobj` library (<https://pypi.org/project/javaobj-py3/>).
 
 ## How To Use
 
@@ -49,7 +49,7 @@ embml.sklearnModel(inputModel, outputFile, opts)
 embml.wekaModel(inputModel, outputFile, opts)
 		
 # opts can include:
-#	-rules: to generate a decision tree classifier code using if-then-else format.
+#	-rules: to generate a decision tree classifier code using a representation with if-then-else statements.
 #	-fxp <n> <m>: to generate a classifier code that uses fixed-point format to perform real number operations. In this case, <n> is the number of integer bits and <m> is the number of fractional bits in the Qn.m format. Note that n + m + 1 must be equal to 32, 16, or 8, since that one bit is used to represent signed numbers.
 #	-approx: to generate an MLP classifier code that employs an approximation to substitute the sigmoid as an activation function in the neurons.
 #	-pwl <x>: to generate an MLP classifier code that employs a piecewise approximation to substitute the sigmoid as an activation function in the neurons. In this case, <x> must be equal to 2 (to use an 2-point PWL approximation) or 4 (to use an 4-point PWL approximation).
